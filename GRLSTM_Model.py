@@ -9,6 +9,8 @@ import torch.nn.functional as F
 import numpy as np
 from torch.nn.utils.rnn import pack_padded_sequence, pad_packed_sequence
 
+import torch.nn.init as init
+
 # 定义MLP模型
 class MLP(nn.Module):
     def __init__(self, input_size, hidden_size, output_size):
@@ -18,6 +20,10 @@ class MLP(nn.Module):
         self.relu = nn.ReLU()
         # 隐藏层到输出层
         self.fc2 = nn.Linear(hidden_size, output_size)
+
+        # 使用 xavier_uniform_ 初始化权重
+        init.xavier_uniform_(self.fc1.weight)
+        init.xavier_uniform_(self.fc2.weight)
 
     def forward(self, x):
         # 通过第一个全连接层和ReLU激活函数
@@ -56,6 +62,7 @@ class FeatureViewModule(nn.Module):
     def __init__(self, input_dim, hidden_dim):
         super(FeatureViewModule, self).__init__()
         self.feature_embedding = nn.Linear(input_dim, hidden_dim)
+        init.xavier_uniform_(self.feature_embedding.weight)
 
     def forward(self, x):
         feature_emb = F.relu(self.feature_embedding(x))
@@ -171,6 +178,7 @@ class GRLSTM(nn.Module):
             embedding_weight2 = self.gat2(self.poi_features, batch_str_edge_index)
             # embedding_weight2 = self.poi_features + embedding_weight2
             embedding_weight3 = self.fea_module(fea_x)
+            embedding_weight3 = F.normalize(embedding_weight3, p=2, dim=-1)
 
             embedding_weight = torch.cat((embedding_weight1, embedding_weight2), dim=1)
             embedding_weight = self.mlp1(embedding_weight)
@@ -216,6 +224,7 @@ class GRLSTM(nn.Module):
             embedding_weight = torch.cat((embedding_weight1, embedding_weight2), dim=1)
             embedding_weight = self.mlp1(embedding_weight)
             embedding_weight3 = self.fea_module(fea_x)
+            embedding_weight3 = F.normalize(embedding_weight3, p=2, dim=-1)
 
             embedding_weight = torch.cat((embedding_weight, embedding_weight3), dim=1)
             embedding_weight = self.mlp2(embedding_weight)
@@ -268,6 +277,7 @@ class GRLSTM(nn.Module):
                     (embedding_weight1, embedding_weight2), dim=1)
                 embedding_weight = self.mlp1(embedding_weight)
                 embedding_weight3 = self.fea_module(fea_x)
+                embedding_weight3 = F.normalize(embedding_weight3, p=2, dim=-1)
 
                 embedding_weight = torch.cat((embedding_weight, embedding_weight3), dim=1)
                 embedding_weight = self.mlp2(embedding_weight)
@@ -286,6 +296,7 @@ class GRLSTM(nn.Module):
                 embedding_weight = torch.cat((embedding_weight1, embedding_weight2), dim=1)
                 embedding_weight = self.mlp1(embedding_weight)
                 embedding_weight3 = self.fea_module(fea_x)
+                embedding_weight3 = F.normalize(embedding_weight3, p=2, dim=-1)
 
                 embedding_weight = torch.cat((embedding_weight, embedding_weight3), dim=1)
                 embedding_weight = self.mlp2(embedding_weight)
